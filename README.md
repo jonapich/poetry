@@ -5,9 +5,12 @@ ensuring you have the right stack everywhere.
 
 ![Poetry Install](https://raw.githubusercontent.com/python-poetry/poetry/master/assets/install.gif)
 
-It supports Python 2.7 and 3.4+.
+It supports Python 2.7 and 3.5+.
 
-![Tests Status](https://github.com/python-poetry/poetry/workflows/Tests/badge.svg)
+**Note**: Python 2.7 and 3.5 will no longer be supported in the next feature release (1.2).
+You should consider updating your Python version to a supported one.
+
+[![Tests Status](https://github.com/python-poetry/poetry/workflows/Tests/badge.svg?branch=master&event=push)](https://github.com/python-poetry/poetry/actions?query=workflow%3ATests+branch%3Amaster+event%3Apush)
 
 The [complete documentation](https://python-poetry.org/docs/) is available on the [official website](https://python-poetry.org).
 
@@ -22,6 +25,13 @@ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poet
 ```
 
 Alternatively, you can download the `get-poetry.py` file and execute it separately.
+
+The setup script must be able to find one of following executables in your shell's path environment:
+
+- `python` (which can be a py3 or py2 interpreter)
+- `python3`
+- `py.exe -3` (Windows)
+- `py.exe -2` (Windows)
 
 If you want to install prerelease versions, you can do so by passing `--preview` to `get-poetry.py`:
 
@@ -65,7 +75,7 @@ to `self update`.
 poetry self update 1.0.0
 ```
 
-!!!note
+*Note:*
 
     If you are still on poetry version < 1.0 use `poetry self:update` instead.
 
@@ -79,17 +89,27 @@ See `poetry help completions` for full details, but the gist is as simple as usi
 # Bash
 poetry completions bash > /etc/bash_completion.d/poetry.bash-completion
 
-# Bash (macOS/Homebrew)
+# Bash (Homebrew)
 poetry completions bash > $(brew --prefix)/etc/bash_completion.d/poetry.bash-completion
 
 # Fish
 poetry completions fish > ~/.config/fish/completions/poetry.fish
 
+# Fish (Homebrew)
+poetry completions fish > (brew --prefix)/share/fish/vendor_completions.d/poetry.fish
+
 # Zsh
 poetry completions zsh > ~/.zfunc/_poetry
 
-# Zsh (macOS/Homebrew)
+# Zsh (Homebrew)
 poetry completions zsh > $(brew --prefix)/share/zsh/site-functions/_poetry
+
+# Zsh (Oh-My-Zsh)
+mkdir $ZSH/plugins/poetry
+poetry completions zsh > $ZSH/plugins/poetry/_poetry
+
+# Zsh (prezto)
+poetry completions zsh > ~/.zprezto/modules/completion/external/src/_poetry
 ```
 
 *Note:* you may need to restart your shell in order for the changes to take
