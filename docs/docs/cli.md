@@ -6,15 +6,6 @@ This chapter documents all the available commands.
 To get help from the command-line, simply call `poetry` to see the complete list of commands,
 then `--help` combined with any of those can give you more information.
 
-As `Poetry` uses [cleo](https://github.com/sdispater/cleo) you can call commands by short name if it's not ambiguous.
-
-```bash
-poetry up
-```
-
-calls `poetry update`.
-
-
 ## Global options
 
 * `--verbose (-v|vv|vvv)`: Increase the verbosity of messages: "-v" for normal output, "-vv" for more verbose output and "-vvv" for debug.
@@ -90,6 +81,7 @@ poetry init
 * `--name`: Name of the package.
 * `--description`: Description of the package.
 * `--author`: Author of the package.
+* `--python` Compatible Python versions.
 * `--dependency`: Package to require with a version constraint. Should be in format `foo:1.0.0`.
 * `--dev-dependency`: Development requirements, see `--require`.
 
@@ -116,8 +108,15 @@ the `--no-dev` option.
 poetry install --no-dev
 ```
 
+If you want to remove old dependencies no longer present in the lock file, use the
+`--remove-untracked` option.
+
+```bash
+poetry install --remove-untracked
+```
+
 You can also specify the extras you want installed
-by passing the `--E|--extras` option (See [Extras](#extras) for more info)
+by passing the `-E|--extras` option (See [Extras](/docs/pyproject/#extras) for more info)
 
 ```bash
 poetry install --extras "mysql pgsql"
@@ -165,6 +164,11 @@ If you just want to update a few packages and not all, you can list them as such
 poetry update requests toml
 ```
 
+Note that this will not update versions for dependencies outside their version constraints specified
+in the `pyproject.toml` file. In other terms, `poetry update foo` will be a no-op if the version constraint
+specified for `foo` is `~2.3` or `2.3` and `2.4` is available. In order for `foo` to be updated, you must
+update the constraint, for example `^2.3`. You can do this using the `add` command.
+
 ### Options
 
 * `--dry-run` : Outputs the operations but will not execute anything (implicitly enables --verbose).
@@ -204,6 +208,12 @@ You can also add `git` dependencies:
 poetry add git+https://github.com/sdispater/pendulum.git
 ```
 
+or use ssh instead of https:
+
+```bash
+poetry add git+ssh://git@github.com/sdispater/pendulum.git
+```
+
 If you need to checkout a specific branch, tag or revision,
 you can specify it when using `add`:
 
@@ -220,15 +230,17 @@ poetry add ../my-package/dist/my-package-0.1.0.tar.gz
 poetry add ../my-package/dist/my_package-0.1.0.whl
 ```
 
-Path dependencies pointing to a local directory will be installed in editable mode (i.e. setuptools "develop mode").
-It means that changes in the local directory will be reflected directly in environment.
-
-If you don't want the dependency to be installed in editable mode you can specify it in the `pyproject.toml` file:
+If you want the dependency to be installed in editable mode you can specify it in the `pyproject.toml` file. It means that changes in the local directory will be reflected directly in environment.
 
 ```toml
 [tool.poetry.dependencies]
-my-package = {path = "../my/path", develop = false}
+my-package = {path = "../my/path", develop = true}
 ```
+
+!!!note
+
+    Before poetry 1.1 path dependencies were installed in editable mode by default. You should always set the `develop` attribute explicit,
+    to make sure the behavior is the same for all poetry versions.
 
 If the package(s) you want to install provide extras, you can specify them
 when adding the package:
@@ -245,6 +257,7 @@ poetry add "git+https://github.com/pallets/flask.git@1.1.1[dotenv,dev]"
 * `--path`: The path to a dependency.
 * `--optional` : Add as an optional dependency.
 * `--dry-run` : Outputs the operations but will not execute anything (implicitly enables --verbose).
+* `--lock` : Do not perform install (only update the lockfile).
 
 
 ## remove
@@ -305,7 +318,7 @@ Note that, at the moment, only pure python wheels are supported.
 
 ### Options
 
-* `--format (-F)`: Limit the format to either wheel or sdist.
+* `--format (-f)`: Limit the format to either `wheel` or `sdist`.
 
 ## publish
 
@@ -325,6 +338,7 @@ It can also build the package if you pass it the `--build` option.
 Should match a repository name set by the [`config`](#config) command.
 * `--username (-u)`: The username to access the repository.
 * `--password (-p)`: The password to access the repository.
+* `--dry-run`: Perform all actions except upload the package.
 
 ## config
 
@@ -401,10 +415,6 @@ This command searches for packages on a remote index.
 poetry search requests pendulum
 ```
 
-### Options
-
-* `--only-name (-N)`: Search only in name.
-
 ## lock
 
 This command locks (without installing) the dependencies specified in `pyproject.toml`.
@@ -419,16 +429,33 @@ This command shows the current version of the project or bumps the version of
 the project and writes the new version back to `pyproject.toml` if a valid
 bump rule is provided.
 
-The new version should ideally be a valid semver string or a valid bump rule:
+The new version should ideally be a valid [semver](https://semver.org/) string or a valid bump rule:
 `patch`, `minor`, `major`, `prepatch`, `preminor`, `premajor`, `prerelease`.
 
+The table below illustrates the effect of these rules with concrete examples.
+
+| rule       |        before | after         |
+|------------|---------------|---------------|
+| major      |         1.3.0 | 2.0.0         |
+| minor      |         2.1.4 | 2.2.0         |
+| patch      |         4.1.1 | 4.1.2         |
+| premajor   |         1.0.2 | 2.0.0-alpha.0 |
+| preminor   |         1.0.2 | 1.1.0-alpha.0 |
+| prepatch   |         1.0.2 | 1.0.3-alpha.0 |
+| prerelease |         1.0.2 | 1.0.3-alpha.0 |
+| prerelease | 1.0.3-alpha.0 | 1.0.3-alpha.1 |
+| prerelease |  1.0.3-beta.0 | 1.0.3-beta.1  |
+
+### Options
+
+* `--short (-s)`: Output the version number only.
 
 ## export
 
 This command exports the lock file to other formats.
 
 ```bash
-poetry export -f requirements.txt > requirements.txt
+poetry export -f requirements.txt --output requirements.txt
 ```
 
 !!!note
@@ -437,8 +464,8 @@ poetry export -f requirements.txt > requirements.txt
 
 ### Options
 
-* `--format (-f)`: The format to export to.  Currently, only
-  `requirements.txt` is supported.
+* `--format (-f)`: The format to export to (default: `requirements.txt`).
+  Currently, only `requirements.txt` is supported.
 * `--output (-o)`: The name of the output file.  If omitted, print to standard
   output.
 * `--dev`: Include development dependencies.
@@ -451,4 +478,32 @@ poetry export -f requirements.txt > requirements.txt
 The `env` command regroups sub commands to interact with the virtualenvs
 associated with a specific project.
 
-See [Managing environments](./managing-environments.md) for more information about these commands.
+See [Managing environments](/docs/managing-environments/) for more information about these commands.
+
+## cache
+
+The `cache` command regroups sub commands to interact with Poetry's cache.
+
+### cache list
+
+The `cache list` command lists Poetry's available caches.
+
+```bash
+poetry cache list
+```
+
+### cache clear
+
+The `cache clear` command removes packages from a cached repository.
+
+For example, to clear the whole cache of packages from the `pypi` repository, run:
+
+```bash
+poetry cache clear pypi --all
+```
+
+To only remove a specific package from a cache, you have to specify the cache entry in the following form `cache:package:version`:
+
+```bash
+poetry cache clear pypi:requests:2.24.0
+```

@@ -12,8 +12,9 @@ except ImportError:
     from glob import glob
 
 try:
-    from importlib import metadata
     import zipfile as zipp
+
+    from importlib import metadata
 except ImportError:
     import importlib_metadata as metadata
     import zipp
@@ -22,6 +23,11 @@ try:
     import urllib.parse as urlparse
 except ImportError:
     import urlparse
+
+try:
+    from os import cpu_count
+except ImportError:  # Python 2
+    from multiprocessing import cpu_count
 
 try:  # Python 2
     long = long
@@ -40,14 +46,18 @@ PY36 = sys.version_info >= (3, 6)
 
 WINDOWS = sys.platform == "win32"
 
-if PY2:
-    import pipes
+try:
+    from shlex import quote
+except ImportError:
+    # PY2
+    from pipes import quote  # noqa
 
-    shell_quote = pipes.quote
+if PY34:
+    from importlib.machinery import EXTENSION_SUFFIXES
 else:
-    import shlex
+    from imp import get_suffixes
 
-    shell_quote = shlex.quote
+    EXTENSION_SUFFIXES = [suffix[0] for suffix in get_suffixes()]
 
 
 if PY35:
@@ -63,9 +73,11 @@ else:
 
 if PY35:
     import subprocess as subprocess
+
     from subprocess import CalledProcessError
 else:
     import subprocess32 as subprocess
+
     from subprocess32 import CalledProcessError
 
 
@@ -272,10 +284,7 @@ def to_str(string):
 
 
 def list_to_shell_command(cmd):
-    executable = cmd[0]
-
-    if " " in executable:
-        executable = '"{}"'.format(executable)
-        cmd[0] = executable
-
-    return " ".join(cmd)
+    return " ".join(
+        '"{}"'.format(token) if " " in token and token[0] not in {"'", '"'} else token
+        for token in cmd
+    )
